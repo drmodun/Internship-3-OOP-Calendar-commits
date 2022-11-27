@@ -3,50 +3,48 @@ using Microsoft.VisualBasic;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading.Channels;
 using System.Xml.Serialization;
 //To do: add comments and console.clear()
-bool Dialog()//Dialog window
+bool DialogConfirmation()
 {
-    Console.WriteLine("Ova akcija trrajno mijenja podatke aplikacije, želite li je napraviti");
-    Console.WriteLine("1-DA" + "\n" + "0-Ne");
-    var final=Console.ReadLine();
-    if (final == "1")
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    Console.WriteLine("Ova akcija trajno mijenja podatke aplikacije, želite li je napraviti");
+    Console.WriteLine("1-Da" + "\n" + "0-Ne");
+    var decsion=Console.ReadLine();
+    return (decsion == "1");
 }
-void FutureMenu (List<Event> futureEvents, List<Event> events)//Meni za izabiranje akcija za buduće eventove
+void FutureEventsMenu (List<Event> futureEvents, List<Event> events)//Meni za izabiranje akcija za buduće eventove
 {
+    
     var idList = new List<string>();
     foreach (var item in futureEvents)
     {
-        ispis(item);
+        PrintEvent(item);
         idList.Add(item.Id.ToString());
     }
 
     var loop = 1;
     while (loop == 1)//Trajna for petlja (dok sami ne izađemo)
     {
+        Console.Clear();
         Console.WriteLine("Upišite što želite napraviti");
         Console.WriteLine("1 - Uklonite event");
         Console.WriteLine("2 - Uklonite sudionika");
         Console.WriteLine("3 - Ispis");
         Console.WriteLine("0 - Main Menu");
         var choice = Console.ReadLine();
+        Console.Clear();
         switch (choice)
         {
             case "2":
 
-                Console.WriteLine("Upišitre id eventa kojemu želite maknuti sudionika");
+                Console.WriteLine("Upišite id eventa kojemu želite maknuti sudionika");
                 var idToRemove = Console.ReadLine();
                 if (idList.Contains(idToRemove) == true)//Provjera postoji li event gdje želimo maknuti korisnika
                 {
-                    Console.WriteLine(futureEvents[idList.IndexOf(idToRemove)].Name + "je evnet sa kojega želite maknuti sudionika");
+                    Console.WriteLine(futureEvents[idList.IndexOf(idToRemove)].Name + " je event sa kojega želite maknuti sudionika");
                     futureEvents[idList.IndexOf(idToRemove)].RemoveAttendee();
+                    Console.ReadLine();
                 }
                 else
                 {
@@ -56,17 +54,18 @@ void FutureMenu (List<Event> futureEvents, List<Event> events)//Meni za izabiran
             case "3":
                 foreach (var item in futureEvents)
                 {
-                    ispis(item);//ispis
+                    PrintEvent(item);//ispis
                 }
+                Console.ReadLine();
                 break;
             case "1":
-                Console.WriteLine("Upišite id eventa kojeg i uklonili");
+                Console.WriteLine("Upišite id eventa kojeg bi uklonili");
                 var idRemove = Console.ReadLine();
                 if (idList.Contains(idRemove) == true)
                 {
                     var EventToDelete = events.Find(i => i.Id == futureEvents[idList.IndexOf(idRemove)].Id);
-                    Console.WriteLine(EventToDelete.Name +" je evnt kojeg želite izbrisati");
-                    var confirmDewletion =Dialog();
+                    Console.WriteLine(EventToDelete.Name +" je event kojeg želite izbrisati");
+                    var confirmDewletion =DialogConfirmation();
                     if (confirmDewletion == true)
                     {
                         foreach (var item in EventToDelete.actual_attendes)
@@ -83,33 +82,37 @@ void FutureMenu (List<Event> futureEvents, List<Event> events)//Meni za izabiran
                 else
                 {
                     Console.WriteLine("Event ne postoji");
+                    Console.ReadLine();
                 }
                 break;
             case "0":
-                loop = 1;
+                loop = 0;
+                Console.Clear();
                 return;
 
         }
     }
 }
-void ActiveMenu (List<Event> activeEvents)//Aktivni menu
+void ActiveEventsMenu (List<Event> activeEvents)
 {
     var idList = new List<string>();
-    foreach (var item in activeEvents)//ista procedura kao i groe, dodajemo listu idova za lakše traženje
+    foreach (var item in activeEvents)//ista procedura kao i gore, dodajemo listu idova za lakše traženje
     {
-        ispis(item);
-        idList.Add(item.Id.ToString());
+        PrintEvent(item);
+        idList.Add(item.Id.ToString()); 
     }
     
     var loop = 1;
     while (loop == 1)
     {
         //izbornik
+        Console.Clear();
         Console.WriteLine("Upišite što želite napraviti");
         Console.WriteLine("1 - Zabilježite izostanak");
         Console.WriteLine("2 - Ispis");
         Console.WriteLine("0 - Main Menu");
-        var choice = Console.ReadLine();    
+        var choice = Console.ReadLine();
+        Console.Clear ();
         switch (choice)
         {
             case "1":
@@ -123,125 +126,123 @@ void ActiveMenu (List<Event> activeEvents)//Aktivni menu
                 else
                 {
                     Console.WriteLine("Event ne postoji");
+                    Console.ReadLine();
                 }
                 break;
             case "2":
                     foreach (var item in activeEvents)
                     {
-                        ispis(item);
-                    }
-                    break;
+                        PrintEvent(item);
+                }
+                Console.ReadLine();
+                break;
             case "0":
                     loop = 1;
                     return;
-                default: Console.WriteLine("Nije upisana valjana opcija"); break;
+                default: Console.WriteLine("Nije upisana valjana opcija"); Console.ReadLine(); break;
 
         }
     }
 }
-List <List<Event>> filter(List<Event> events)//filter preko kojega dobijamo buduće, prošle i sadašnje evnetove i listi
+List <List<Event>> FilterOfEvents(List<Event> events)
 {
-    var prosli = new List<Event>();
-    var trenutni = new List<Event>();
-    var buduci = new List<Event>();
+    var pastEvents = new List<Event>();
+    var activeEvents = new List<Event>();
+    var futureEvents = new List<Event>();
     foreach (var item in events)
     {
         if (DateTime.Now > item.EndDate)
         {
-            prosli.Add(item);
+            pastEvents.Add(item);
         }
         else if(DateTime.Now>=item.StartDate && DateTime.Now <= item.EndDate)
         {
-            trenutni.Add(item);
+            activeEvents.Add(item);
         }
         else
         {
-            buduci.Add(item);
+            futureEvents.Add(item);
         }
     }
-    var fullList= new List<List<Event>>() { prosli, trenutni, buduci };//lista eventova
+    var fullList= new List<List<Event>>() { pastEvents, activeEvents, futureEvents };//lista eventova
     return fullList;
 }
-//funmkcaij za ispis podataka događaja
-void ispis(Event događaj)
+void PrintEvent(Event eventToPrint)
 {
     Console.WriteLine("Event info");
-    Console.WriteLine($"Id: {događaj.Id}");
-    Console.WriteLine($"Ime eventa: {događaj.Name}");
-    Console.WriteLine($"Lokacija eventa: {događaj.Loacation}");
-    //Console.WriteLine($"Datum početka {događaj.StartDate}");
-    //Console.WriteLine($"Datum kraja {događaj.EndDate}");
-
-    if (DateTime.Now>=događaj.StartDate && DateTime.Now<događaj.EndDate) {//Ispis drukciji ovisno o starosti eventa
-        Console.WriteLine($"Završava za {Math.Round((decimal)(događaj.EndDate - DateTime.Now).TotalHours, 1)} sati");
-        var prisutni = new List<string>();
-        var neprisutni = new List<string>();
-        foreach (var item in događaj.actual_attendes)//Traženje prisutnih i neprisutnih
+    Console.WriteLine($"Id: {eventToPrint.Id}");
+    Console.WriteLine($"Ime eventa: {eventToPrint.Name}");
+    Console.WriteLine($"Lokacija eventa: {eventToPrint.Loacation}");
+    if (DateTime.Now>=eventToPrint.StartDate && DateTime.Now<eventToPrint.EndDate) {//Ispis drukciji ovisno o starosti eventa
+        Console.WriteLine($"Završava za {Math.Round((decimal)(eventToPrint.EndDate - DateTime.Now).TotalHours, 1)} sati");
+        var here = new List<string>();
+        var absent = new List<string>();
+        foreach (var item in eventToPrint.actual_attendes)//Traženje prisutnih i neprisutnih
         {
-            if (item.osobe_dict[događaj.Id] == true)
+            if (item.osobe_dict[eventToPrint.Id] == true)
             {
-                prisutni.Add(item.Name + " " + item.Prezime + " " + item.email);
+                here.Add(item.Name + " " + item.Surname + " " + item.email);
             }
             else
             {
-                neprisutni.Add(item.Name + " " + item.Prezime + " " + item.email);
+                absent.Add(item.Name + " " + item.Surname + " " + item.email);
             }
         }
         Console.WriteLine("Prisutni su ");
-        Console.WriteLine(string.Join(",", prisutni));
+        Console.WriteLine(string.Join(",", here));
         //Ispis prisutnih
-        if (prisutni.Count() == 0)
+        if (here.Count() == 0)
         {
             Console.WriteLine("Nitko nije prisutan");
         }
         Console.WriteLine("Neprisutni su ");
-        Console.WriteLine(string.Join(",", neprisutni));
+        Console.WriteLine(string.Join(",", absent));
 
-        if (neprisutni.Count() == 0)
+        if (absent.Count() == 0)
         {
             Console.WriteLine("Nema neprisutnih sudionika");
         }
     }
 
     else {
-        if (DateTime.Now > događaj.EndDate)//Slučaj da je bio prije
+        if (DateTime.Now > eventToPrint.EndDate)//Slučaj da je bio prije
         {
-            Console.WriteLine($"Završio prije {(int) (DateTime.Now-događaj.EndDate).TotalDays} dana");
-            Console.WriteLine($"Trajao je {Math.Round((decimal)(događaj.EndDate - događaj.StartDate).TotalHours, 1)} sati");
-            var prisutni = new List<string>();//Opet prisutni i neprisutni
-            var neprisutni = new List<string>();
-            foreach (var item in događaj.actual_attendes)//Ovo radim preko liste koju kasnije ispisujem, možda nije najefikasniji način ali čini se da radi
+            Console.WriteLine($"Završio prije {(int) (DateTime.Now-eventToPrint.EndDate).TotalDays} dana");
+            Console.WriteLine($"Trajao je {Math.Round((decimal)(eventToPrint.EndDate - eventToPrint.StartDate).TotalHours, 1)} sati");
+            var here = new List<string>();//Opet prisutni i neprisutni
+            var absent = new List<string>();
+            foreach (var item in eventToPrint.actual_attendes)//Ovo radim preko liste koju kasnije ispisujem, možda nije najefikasniji način ali čini se da radi
             {
-                if (item.osobe_dict[događaj.Id] == true)
+                if (item.osobe_dict[eventToPrint.Id] == true)
                 {
-                    prisutni.Add(item.Name + " " + item.Prezime + " " + item.email );
+                    here.Add(item.Name + " " + item.Surname + " " + item.email );
                 }
                 else
                 {
-                    neprisutni.Add(item.Name + " " + item.Prezime + " " + item.email);
+                    absent.Add(item.Name + " " + item.Surname + " " + item.email);
                 }
             }
             Console.WriteLine("Prisutni su bili");
-            Console.WriteLine(string.Join(",", prisutni));
-            if (prisutni.Count() == 0)
+            Console.WriteLine(string.Join(",", here));
+            if (here.Count() == 0)
             {
                 Console.WriteLine("Nema prisutnih sudionika");
             }
             Console.WriteLine("Neprisutni su bili");
-            Console.WriteLine(string.Join(",", neprisutni));
-            if (neprisutni.Count() == 0)
+            Console.WriteLine(string.Join(",", absent));
+            if (absent.Count() == 0)
             {
                 Console.WriteLine("Nema neprisutnih sudionika");
             }
         }
-        else//Budući događaj
+        else//Budući eventToPrint
         {
-            Console.WriteLine($"Počinje za {(int)(događaj.StartDate - DateTime.Now).TotalDays} dana");
-            Console.WriteLine($"Traje {Math.Round((decimal)(događaj.EndDate - događaj.StartDate).TotalHours, 1)} sata");
+            Console.WriteLine($"Počinje za {(int)(eventToPrint.StartDate - DateTime.Now).TotalDays} dana");
+            Console.WriteLine($"Traje {Math.Round((decimal)(eventToPrint.EndDate - eventToPrint.StartDate).TotalHours, 1)} sata");
             var output = new List<string>();
-            foreach (var item in događaj.actual_attendes)
+            foreach (var item in eventToPrint.actual_attendes)
             {
-                output.Add($"{item.Name} {item.Prezime} ({item.email}) je sudionik");
+                output.Add($"{item.Name} {item.Surname} ({item.email}) je sudionik");
             }
             Console.WriteLine(string.Join(",", output));
         }
@@ -263,7 +264,7 @@ var People = new List<Osoba>() {//Lista defultnih osoba,nisu najkreatinija imena
     new Osoba("Frane", "Franić ", "Frane@gmail.com"),
     new Osoba("Luka", "Lukić", "Luka@dump.hr"),
 };
-Osoba FindPerson(string email, List<Osoba> possiblePeople)//Traženje osoba preko emaila
+Osoba FindPersonByMail(string email, List<Osoba> possiblePeople)//Traženje osoba preko emaila
 {
     foreach (var item in possiblePeople)
     {
@@ -279,11 +280,12 @@ Osoba FindPerson(string email, List<Osoba> possiblePeople)//Traženje osoba prek
 }
 var events = new List<Event>() //Lista  defultnih eventova 
 {
-    new Event("Janov rođ", "Split", new DateTime(2006, 6, 28, 19, 00, 00), new DateTime(2006, 6, 28, 20, 00, 00), People, new List<Osoba>(){FindPerson("jan.modun.st@gmail.com", People)}),
-    new Event("Janov 16 rođ", "Split", new DateTime(2022, 6, 28, 19, 00, 00), new DateTime(2022, 6, 28, 20, 00, 00), People, new List<Osoba>(){FindPerson("jan.modun.st@gmail.com", People) }),
-    new Event("Dump 4. predavanje", "Fesb", new DateTime(2022, 11, 27, 13, 00, 00), new DateTime(2022, 11, 27, 16, 00, 00), People, new List<Osoba>{FindPerson("jan.modun.st@gmail.com", People), FindPerson("jan@gmail.com", People), FindPerson("admin@gmail.com", People), FindPerson("Luka@dump.hr", People)}),
-    new Event("25.11", "Kuća", new DateTime(2022, 11, 25, 00, 00, 00), new DateTime(2022, 11, 26, 00, 00, 00), People, new List<Osoba>{FindPerson("jan.modun.st@gmail.com", People), FindPerson("Stjepan@gmail.com", People)}),
-    new Event("Utakmica", "Mioc", new DateTime(2023, 11, 24, 13, 00, 00), new DateTime(2023, 11, 24, 16, 00, 00), People, new List<Osoba>{FindPerson("marko@gmail.com", People), FindPerson("Petar@gmail.com", People), FindPerson("stipe@gmail.com", People)})
+    new Event("Janov rođ", "Split", new DateTime(2006, 6, 28, 19, 00, 00), new DateTime(2006, 6, 28, 20, 00, 00), new List<Osoba>(){FindPersonByMail("jan.modun.st@gmail.com", People)}),
+    new Event("Janov 16 rođ", "Split", new DateTime(2022, 6, 28, 19, 00, 00), new DateTime(2022, 6, 28, 20, 00, 00), new List<Osoba>(){FindPersonByMail("jan.modun.st@gmail.com", People) }),
+    new Event("Dump 4. predavanje", "Fesb", new DateTime(2022, 11, 27, 13, 00, 00), new DateTime(2022, 11, 27, 16, 00, 00), new List<Osoba>{FindPersonByMail("jan.modun.st@gmail.com", People), FindPersonByMail("jan@gmail.com", People), FindPersonByMail("admin@gmail.com", People), FindPersonByMail("Luka@dump.hr", People)}),
+    new Event("11 mjesec", "Kuća", new DateTime(2022, 11, 1, 00, 00, 00), new DateTime(2022, 12, 1, 00, 00, 00), new List<Osoba>{FindPersonByMail("jan.modun.st@gmail.com", People), FindPersonByMail("Stjepan@gmail.com", People)}),
+    new Event("Utakmica", "Mioc", new DateTime(2023, 11, 24, 13, 00, 00), new DateTime(2023, 11, 24, 16, 00, 00), new List<Osoba>{FindPersonByMail("marko@gmail.com", People), FindPersonByMail("Petar@gmail.com", People), FindPersonByMail("stipe@gmail.com", People)}),
+    new Event("2022 godina", "Svijet", new DateTime(2022, 1, 1, 13, 00, 00), new DateTime(2023, 1, 1, 16, 00, 00), new List<Osoba>{FindPersonByMail("marko@gmail.com", People), FindPersonByMail("Petar@gmail.com", People), FindPersonByMail("stipe@gmail.com", People)})
 
 };
 bool checkAvability(Osoba person, DateTime startDate, DateTime endDate, List<Event> events)//Provjerava može li se event doadti s obzirom na druge evewntove koje suidonik pohađa
@@ -293,7 +295,7 @@ bool checkAvability(Osoba person, DateTime startDate, DateTime endDate, List<Eve
         var event1 = events.Find(i => i.Id == item.Key);
         if ((startDate>=event1.StartDate && startDate<=event1.EndDate) || (endDate >= event1.StartDate && endDate <= event1.EndDate) || (startDate<=event1.StartDate && endDate>=event1.EndDate) || startDate==event1.StartDate || endDate==event1.EndDate)
         {
-            Console.WriteLine($"Nije moguće dodati osobu {person.Name + " " + person.Prezime}, preklapa se sa drugim eventima");
+            Console.WriteLine($"Nije moguće dodati osobu {person.Name + " " + person.Surname}, preklapa se sa drugim eventima");
             return false;
         }
 
@@ -301,20 +303,16 @@ bool checkAvability(Osoba person, DateTime startDate, DateTime endDate, List<Eve
     return true;
 }
 var loop = 1;
-/*for(int i = 0; i < events.Count; i++)
-{
-   ispis(events[i]);
-}
-*/
 while (loop == 1)//loop izbora
 {//Izbornik
+    Console.Clear();
     Console.WriteLine("1 - Aktivni eventi");
     Console.WriteLine("2 - Nadolazeći eventi");
     Console.WriteLine("3 - Završeni eventi");
     Console.WriteLine("4 - Kreiraj event");
     Console.WriteLine("0 - izađ iz apliakcije");
     var choice = Console.ReadLine();
-    
+    Console.Clear();
     switch (choice)
     {
 
@@ -328,28 +326,31 @@ while (loop == 1)//loop izbora
             {
                 Console.WriteLine("Nije uspjelo dodavanje eventa");
             }
+            Console.ReadLine();
             break;
         case "1":
-            ActiveMenu(filter(events)[1]);
+            ActiveEventsMenu(FilterOfEvents(events)[1]);
             break;
         case "2":
-            FutureMenu(filter(events)[2], events);
+            FutureEventsMenu(FilterOfEvents(events)[2], events);
             break;
         case "3":
-            var write= filter(events)[0];//Pošto su ovo stari eventovi, nije potrebno zvati drugu funkcju i nema nikakvih opcija sa stairm eventovima
+            var write= FilterOfEvents(events)[0];//Pošto su ovo stari eventovi, nije potrebno zvati drugu funkcju i nema nikakvih opcija sa stairm eventovima
             foreach (var item in write)
             {
-                ispis(item);
+                PrintEvent(item);
             }
+            Console.ReadLine();
             break;
         case "0":
             Environment.Exit(0);//Izlaz iz aplikacije
             break;
-        default: Console.WriteLine("Nije upisana valjana akcija"); break;
-    }
+        default: Console.WriteLine("Nije upisana valjana akcija"); Console.ReadLine(); break;
+    } 
 }
 bool AddEvent(List<Event> events, List<Osoba> people)//Funkacija za dodavanje eventa
 {
+    Console.Clear();
     Console.WriteLine("Upišite ime eventa");
     var name = Console.ReadLine();
     foreach (var item in events)
@@ -361,7 +362,7 @@ bool AddEvent(List<Event> events, List<Osoba> people)//Funkacija za dodavanje ev
         }
     }
     Console.WriteLine("Upišite lokaciju događaja");
-    var lokacija = Console.ReadLine();
+    var location = Console.ReadLine();
     string[] formats = { "dd/MM/yyyy", "dd/M/yyyy", "d/M/yyyy", "d/MM/yyyy",
                     "dd/MM/yy", "dd/M/yy", "d/M/yy", "d/MM/yy", "dd/MM/yyyy HH:mm:ss","dd/MM/yyyy HH:mm", "dd/M/yyyy HH:mm", "d/M/yyyy HH:mm", "d/MM/yyyy HH:mm",
                     "dd/MM/yy HH:mm", "dd/M/yy HH:mm", "d/M/yy HH:mm", "d/MM/yy HH:mm", "yyyy/MM/dd H:mm"}; // razni dopušteni formsti unosa eventa., lakše bi bilo da se korinsik držoi zadanoga ali je moguće ovdje izbjkeći grešku
@@ -391,17 +392,17 @@ bool AddEvent(List<Event> events, List<Osoba> people)//Funkacija za dodavanje ev
         return false;
     }
     var add = new List<Osoba>();
-    for (var i=0; i<NumOfPeople; i++)//dodavanje sudionika
+    for (var i = 0; i < NumOfPeople; i++)//dodavanje sudionika
     {
         var email = PeopleToAdd[i];
         var check = 0;
-        foreach(var item in people)
+        foreach (var item in people)
         {
             if (item.email == email)
             {
                 if (checkAvability(item, datumStart, datumEnd, events) == true)//Provjera dostupnosti
                 {
-                    Console.WriteLine($"Dodana osoba {item.Name + " " + item.Prezime}");
+                    Console.WriteLine($"Dodana osoba {item.Name + " " + item.Surname}");
                     add.Add(item);
                     check++;
                 }
@@ -419,12 +420,13 @@ bool AddEvent(List<Event> events, List<Osoba> people)//Funkacija za dodavanje ev
             //Akop nije pronađena osoba s tim emailom, onda izlazi iz funkcije
         }
     }
-    var preset = new Event(name, lokacija, datumStart, datumEnd, people, add);//Stvaranje preseta eventa
+    Console.Clear();
+    var preset = new Event(name, location, datumStart, datumEnd, add);//Stvaranje preseta eventa
     //Ispis infomraicja o eventu
     Console.WriteLine("Informacije eventa");
-    ispis(preset);
-    var end = Dialog();//korinsik ušisuje jeli zadovoljan sa eventom
-    if (end == true)
+    PrintEvent(preset);
+    var confirmAdd = DialogConfirmation();//korinsik ušisuje jeli zadovoljan sa eventom
+    if (confirmAdd == true)
     {
         events.Add(preset);//Dodavanje eventa u listu
         return true;
@@ -444,13 +446,13 @@ bool AddEvent(List<Event> events, List<Osoba> people)//Funkacija za dodavanje ev
 public class Osoba//KLasa osoba
 {
     public string Name;//Ime, promjenjivo svugdje
-    public string Prezime { get; }//Prezime, koje se ne mijenja nakon konstrukcije
+    public string Surname { get; }//Prezime, koje se ne mijenja nakon konstrukcije
     public string email { get; }//Email osobe, nešto kao id osobe zapravo, može ga sae pristupiti svugdje ali ne i mijeanjati
-    public Dictionary<Guid, bool> osobe_dict { get; private set; }//Rječnik priusutnosti
-    public Osoba(string personName,string personSurname, string personEmail)//Funkcija za novu osobu
+    public Dictionary<Guid, bool> osobe_dict { get; private set; }//Rječnik prisutnosti
+    public Osoba(string personName,string personSurname, string personEmail)
     {
         Name = personName;
-        Prezime = personSurname;
+        Surname = personSurname;
         email=personEmail;
         osobe_dict = new Dictionary<Guid, bool>();
     }
@@ -462,50 +464,19 @@ public class Event//Klasa event
     public string Loacation;
     public DateTime StartDate { get;  } //Datum početka i kraja, ne možemo ih mijanjati ali možemo ih gledati
     public DateTime EndDate { get; }
-    public List<Osoba> attendes { get; private set; }//Lista osoba, vidit mogu li mknuti 
     public List<Osoba> actual_attendes { get; private set; }//Lista sudionika
-    public Event(string ime, string lokacija, DateTime datumStart, DateTime datumEnd, List<Osoba> zvanici, List<Osoba> ljudi) //Konstruktor
+    public Event(string ime, string lokacija, DateTime datumStart, DateTime datumEnd, List<Osoba> ljudi) //Konstruktor
     {
         Id = Guid.NewGuid();
         Name = ime;
         Loacation = lokacija;
         StartDate = datumStart;
         EndDate = datumEnd;
-        attendes = zvanici;
         actual_attendes = ljudi;
         foreach(var item in actual_attendes)//doadavanje eventa u prisutnosti osobe
         {
             item.osobe_dict.Add(Id, true);
         }
-    }
-    public void SetPoeple()//Ova se funkcija zapravo nikad ne koristi u programu pošto nikad ne moramo unijesti nove sudionike
-    {
-        var NumOfPeople = 0;
-
-        int.TryParse(Console.ReadLine(), out NumOfPeople);
-        for (int i = 0; i < NumOfPeople; i++)
-        {
-            Console.WriteLine("Upišite ime osobe za zvati na event");
-            var newPerson = Console.ReadLine();
-            var check = 0;
-            foreach (var item in attendes)
-            {
-                if (item.email == newPerson)
-                {
-                    Console.WriteLine($"Osoba {item.Name + " " + item.Prezime} dodana");
-                    item.osobe_dict.Add(Id, true);
-                    actual_attendes.Add(item);
-                    check = 1;
-                    break;
-
-                }
-            }
-            if (check == 0)
-            {
-                Console.WriteLine("Osoba nije pronađena");
-            }
-        }
-
     }
     public void RemoveAttendee()//Funkcija za uklanjanje sudionika, uklanjanje samo 1 sudionika, ne liste njih
     {
@@ -528,7 +499,7 @@ public class Event//Klasa event
                         item.osobe_dict.Remove(Id);
                         actual_attendes.Remove(item);
                         //Micanje sudionika sa liste sudionika iu eventa sda rječnika prisutnosti sudionika
-                        Console.WriteLine($"Osoba {item.Name + " " + item.Prezime} maknuta");
+                        Console.WriteLine($"Osoba {item.Name + " " + item.Surname} maknuta");
                         check = 1; 
                         break;
                         //nisam želio ovdje stavljat funkciju za dialog pa sam samo copy pasta
@@ -557,16 +528,12 @@ public class Event//Klasa event
             Console.WriteLine("Nije upisan valjani broj ljudi");
             return;
         }
-        Console.WriteLine("Ova akcija trrajno mijenja podatke aplikacije, želite li je napraviti");
-        Console.WriteLine("1-DA" + "\n" + "0-Ne");
-        var final = Console.ReadLine();
-        if (final == "1") {
+        Console.WriteLine("Ova akcija trajno mijenja podatke aplikacije, želite li je napraviti");
+        Console.WriteLine("1-Da" + "\n" + "0-Ne");
+        var confirmationDialog = Console.ReadLine();
+        if (confirmationDialog == "1") {
             for (int i = 0; i < NumOfAbsent; i++)
             {
-                /*Console.WriteLine("Upišite email neprisut osobe");
-                var AbsentPerson = Console.ReadLine();
-                var check = 0;
-                */
                 var check = 0;
                 var AbsentPerson = absence[i];
 
@@ -577,7 +544,7 @@ public class Event//Klasa event
 
                             item.osobe_dict[Id] = false;//Promjena vrijednosti prisutnosti
                             check = 1;
-                            Console.WriteLine($"Osoba {item.Name + " " + item.Prezime} je uklonjena");
+                            Console.WriteLine($"Osoba {item.Name + " " + item.Surname} je zapisana kao neprisutna");
                             break;
                     
                     }
